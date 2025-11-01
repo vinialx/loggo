@@ -1,12 +1,34 @@
 {
   "name": "loggo",
-  "module": "index.ts",
+  "version": "1.0.0",
+  "private": false,
+  "description": "A comprehensive TypeScript logging module with file-based logging and email notification capabilities.",
+  "homepage": "https://github.com/vinialx/loggo#readme",
+  "bugs": {
+    "url": "https://github.com/vinialx/loggo/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vinialx/loggo.git"
+  },
+  "files": [
+    "build",
+    "README.md"
+  ],
+  "license": "ISC",
+  "author": "vinialx",
   "type": "module",
-  "private": true,
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "dependencies": {
+    "nodemailer": "^7.0.10"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/nodemailer": "^7.0.2",
+    "prettier": "^3.6.2"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }
