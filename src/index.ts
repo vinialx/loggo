@@ -1,2 +1,2 @@
-export { Loggo } from "./loggo";
+export { Loggo } from "./services/logService";
 export * from "./interfaces/interfaces";
