@@ -4,7 +4,7 @@
     "": {
       "name": "loggo",
       "dependencies": {
-        "nodemailer": "^7.0.9",
+        "nodemailer": "^7.0.10",
       },
       "devDependencies": {
         "@types/bun": "latest",
