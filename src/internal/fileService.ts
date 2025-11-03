@@ -13,9 +13,10 @@ import FormatService from "./formatService";
  */
 
 class FileService {
-  private _filename: string = "";
+  private _txtFilename: string = "";
+  private _jsonFilename: string = "";
   private _currentDay: number = 0;
-  private _initicialized: boolean = false;
+  private _initialized: boolean = false;
 
   private format: FormatService;
 
@@ -38,21 +39,33 @@ class FileService {
    */
 
   initialize(): void {
-    if (this._initicialized) {
+    if (this._initialized) {
       return;
     }
 
     try {
       this._currentDay = new Date().getDate();
 
-      fs.mkdirSync(this.config.directory, { recursive: true });
-      this._filename = path.resolve(
-        this.config.directory,
-        this.format.filename()
-      );
+      const txtDirectory = this.config.directory.txt;
 
-      fs.appendFileSync(this._filename, this.format.separator());
-      this._initicialized = true;
+      fs.mkdirSync(txtDirectory!, { recursive: true });
+      this._txtFilename = path.resolve(txtDirectory!, this.format.filename());
+
+      fs.appendFileSync(this._txtFilename, this.format.separator());
+
+      if (this.config.json) {
+        const jsonDirectory = this.config.directory.json;
+
+        fs.mkdirSync(jsonDirectory!, { recursive: true });
+        this._jsonFilename = path.resolve(
+          jsonDirectory!,
+          this.format.jsonFilename()
+        );
+
+        fs.appendFileSync(this._jsonFilename, this.format.jsonSeparator());
+      }
+
+      this._initialized = true;
     } catch (error) {
       console.error(
         `[Loggo] > [${this.config.client}] [${this.format.date()}] [ERROR] : error initializing loggo > ${(error as Error).message}`
@@ -73,7 +86,7 @@ class FileService {
    * ```
    */
 
-  write(line: string): void {
+  write(line: string, json?: string): void {
     if (!this.initialized) {
       console.warn(
         `[Loggo] > [${this.config.client}] [${this.format.date()}] [WARN] : file service not initialized`
@@ -82,7 +95,11 @@ class FileService {
     }
 
     try {
-      fs.appendFileSync(this._filename, line);
+      fs.appendFileSync(this._txtFilename, line);
+
+      if (this.config.json && json != undefined) {
+        fs.appendFileSync(this._jsonFilename, json);
+      }
     } catch (error) {
       console.error(
         `[Loggo] > [${this.config.client}] [${this.format.date()}] [ERROR] : failed to write to log file > ${(error as Error).message}`
@@ -106,14 +123,25 @@ class FileService {
     }
 
     try {
-      fs.mkdirSync(this.config.directory, { recursive: true });
-      this._filename = path.resolve(
-        this.config.directory,
+      fs.mkdirSync(this.config.directory.txt!, { recursive: true });
+      this._txtFilename = path.resolve(
+        this.config.directory.txt!,
         this.format.filename()
       );
 
-      fs.appendFileSync(this._filename, this.format.separator());
-      this._initicialized = true;
+      fs.appendFileSync(this._txtFilename, this.format.separator());
+
+      if (this.config.json) {
+        fs.mkdirSync(this.config.directory.json!, { recursive: true });
+        this._jsonFilename = path.resolve(
+          this.config.directory.json!,
+          this.format.jsonFilename()
+        );
+
+        fs.appendFileSync(this._jsonFilename, this.format.jsonSeparator());
+      }
+
+      this._initialized = true;
 
       this.rotate().catch((error) =>
         console.error(
@@ -139,12 +167,13 @@ class FileService {
 
   private async rotate(): Promise<void> {
     try {
-      const files = await fsp.readdir(this.config.directory);
+      const txtDirectory = this.config.directory.txt;
+      const txtFiles = await fsp.readdir(txtDirectory!);
 
-      const logFilesPromises = files
+      const logFilesPromises = txtFiles
         .filter((file) => file.endsWith(".txt"))
         .map(async (file) => {
-          const filePath = path.join(this.config.directory, file);
+          const filePath = path.join(txtDirectory!, file);
           const stats = await fsp.stat(filePath);
           return {
             name: file,
@@ -157,8 +186,8 @@ class FileService {
         (a, b) => b.mtime - a.mtime
       );
 
-      if (logFiles.length > this.config.filecount) {
-        const filesToDelete = logFiles.slice(this.config.filecount);
+      if (logFiles.length > this.config.filecount.txt!) {
+        const filesToDelete = logFiles.slice(this.config.filecount.txt!);
 
         await Promise.allSettled(
           filesToDelete.map(async (file) => {
@@ -166,11 +195,48 @@ class FileService {
               await fsp.unlink(file.path);
             } catch (error) {
               console.error(
-                `[Loggo] > [${this.config.client}] [${this.format.date()}] [ERROR] : error deleting old file > ${(error as Error).message}`
+                `[Loggo] > [${this.config.client}] [${this.format.date()}] [ERROR] : error deleting old .txt file > ${(error as Error).message}`
               );
             }
           })
         );
+      }
+
+      if (this.config.json) {
+        const jsonDirectory = this.config.directory.json;
+        const jsonFiles = await fsp.readdir(jsonDirectory!);
+
+        const logFilesPromises = jsonFiles
+          .filter((file) => file.endsWith(".jsonl"))
+          .map(async (file) => {
+            const filePath = path.join(jsonDirectory!, file);
+            const stats = await fsp.stat(filePath);
+            return {
+              name: file,
+              path: filePath,
+              mtime: stats.mtime.getTime(),
+            };
+          });
+
+        const logFiles = (await Promise.all(logFilesPromises)).sort(
+          (a, b) => b.mtime - a.mtime
+        );
+
+        if (logFiles.length > this.config.filecount.json!) {
+          const filesToDelete = logFiles.slice(this.config.filecount.json!);
+
+          await Promise.allSettled(
+            filesToDelete.map(async (file) => {
+              try {
+                await fsp.unlink(file.path);
+              } catch (error) {
+                console.error(
+                  `[Loggo] > [${this.config.client}] [${this.format.date()}] [ERROR] : error deleting old .json file > ${(error as Error).message}`
+                );
+              }
+            })
+          );
+        }
       }
     } catch (error) {
       console.error(
@@ -187,7 +253,7 @@ class FileService {
    */
 
   get initialized(): boolean {
-    return this._initicialized;
+    return this._initialized;
   }
 }
 
