@@ -55,7 +55,7 @@ export class Loggo {
    * ```
    */
 
-  constructor(options: Partial<Config>) {
+  constructor(options?: Partial<Config>) {
     this._config = new Config({
       ...defaultConfig,
       ...options,
