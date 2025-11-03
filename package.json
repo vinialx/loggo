@@ -2,7 +2,7 @@
   "name": "@vinialx/loggo",
   "version": "1.0.0",
   "private": false,
-  "description": "A comprehensive TypeScript logging module with file-based logging and email notification capabilities.",
+  "description": "Logging library for Node.js and Bun with file rotation, SMTP notifications, and JSON output support.",
   "homepage": "https://github.com/vinialx/loggo#readme",
   "bugs": {
     "url": "https://github.com/vinialx/loggo/issues"
@@ -30,5 +30,24 @@
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
-  }
+  },
+  "exports": {
+    ".": {
+      "import": "./build/index.js",
+      "types": "./build/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "preversion": "npm run build"
+  },
+  "keywords": [
+    "logger",
+    "logging",
+    "typescript",
+    "nodemailer",
+    "file-logging",
+    "email-notifications"
+  ]
 }
