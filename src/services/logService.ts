@@ -14,19 +14,53 @@ import Config, { defaultConfig } from "../config/config";
  */
 
 export class Loggo {
+  private _config: Config;
   private fileService: FileService;
   private emailService: EmailService;
   private formatService: FormatService;
 
   /**
-   * Main logging service for Loggo.
-   * Provides methods for logging at different severity levels with automatic file writing,
-   * console output, and email notifications for critical errors.
+   * Creates a new Loggo instance with the specified configuration.
+   * Initializes file service, format service, and email service.
+   * Automatically creates log directories and starts file rotation.
    *
-   * @class Loggo
+   * @param {Partial<LoggoConfig>} options - Configuration options (all optional, uses defaults for missing values)
+   *
+   * @example
+   * ```typescript
+   * // Minimal configuration
+   * const logger = new Loggo({ client: 'MyApp' });
+   *
+   * // With multiple options
+   * const logger = new Loggo({
+   *   client: 'MyApp',
+   *   debug: true,
+   *   console: false,
+   *   filecount: { txt: 7, json: 7 }
+   * });
+   *
+   * // With SMTP for fatal error notifications
+   * const logger = new Loggo({
+   *   client: 'MyApp',
+   *   smtp: {
+   *     host: 'smtp.gmail.com',
+   *     port: 465,
+   *     secure: true,
+   *     username: 'user@gmail.com',
+   *     password: 'password',
+   *     from: 'app@myapp.com',
+   *     to: 'admin@myapp.com'
+   *   }
+   * });
+   * ```
    */
 
-  constructor(private _config: Config = defaultConfig) {
+  constructor(options: Partial<Config>) {
+    this._config = new Config({
+      ...defaultConfig,
+      ...options,
+    });
+
     this.fileService = new FileService(this._config);
     this.formatService = new FormatService(this._config.client);
     this.emailService = new EmailService(this._config);
@@ -41,7 +75,7 @@ export class Loggo {
    * @returns {Config} Current configuration object
    */
 
-  get config(): Config {
+  get config(): Readonly<Config> {
     return this._config;
   }
 
@@ -76,7 +110,13 @@ export class Loggo {
     };
 
     const line = this.formatService.line(entry);
-    this.fileService.write(line);
+
+    if (this.config.json) {
+      const jsonLine = this.formatService.jsonLine(entry);
+      this.fileService.write(line, jsonLine);
+    } else {
+      this.fileService.write(line);
+    }
 
     if (this._config.console) {
       switch (level) {
