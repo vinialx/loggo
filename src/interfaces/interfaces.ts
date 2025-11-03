@@ -1,12 +1,25 @@
 export interface LoggoConfig {
   client?: string;
-  directory?: string;
+  json?: boolean;
+  debug?: boolean;
   console?: boolean;
-  filecount?: number;
+
+  directory?: LoggoDirectory;
+  filecount?: LoggoFilecount;
+
   notify?: boolean;
   smtp?: LoggoSMTPConfig;
   throttle?: number;
-  debug?: boolean;
+}
+
+export interface LoggoDirectory {
+  txt?: string;
+  json?: string;
+}
+
+export interface LoggoFilecount {
+  txt?: number;
+  json?: number;
 }
 
 export interface LoggoSMTPConfig {
